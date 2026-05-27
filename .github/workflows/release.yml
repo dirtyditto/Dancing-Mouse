@@ -4,6 +4,16 @@ on:
   push:
     tags:
       - "v*"
+  workflow_call:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v1.2.3)"
+        required: true
+        type: string
+      version:
+        description: "Version without the leading v (e.g. 1.2.3)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -15,19 +25,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Select Xcode 15
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "15.4"
 
-      - name: Resolve version from tag
+      - name: Resolve version from tag or workflow_call inputs
         id: version
         run: |
-          # GITHUB_REF_NAME is e.g. "v1.2.3"; strip the leading "v".
-          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+            VERSION="${{ inputs.version }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Build .app + DMG
         run: make dmg

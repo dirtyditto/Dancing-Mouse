@@ -1,0 +1,64 @@
+name: Auto-tag on version bump
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  detect-and-tag:
+    name: Tag v<version> if Scripts/create-dmg.sh has a new version
+    runs-on: ubuntu-latest
+    outputs:
+      tagged: ${{ steps.tag.outputs.tagged }}
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version and create tag if new
+        id: tag
+        run: |
+          set -euo pipefail
+
+          VERSION=$(grep -E '^VERSION=' Scripts/create-dmg.sh \
+            | head -n 1 \
+            | sed -E 's/^VERSION="?([^"]+)"?$/\1/')
+
+          if [ -z "${VERSION}" ]; then
+            echo "::error::Could not parse VERSION from Scripts/create-dmg.sh"
+            exit 1
+          fi
+
+          TAG="v${VERSION}"
+          echo "Resolved version: ${VERSION} (tag: ${TAG})"
+
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists — skipping release."
+            echo "tagged=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "${TAG}"
+
+          echo "tagged=true"          >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}"           >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}"   >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: detect-and-tag
+    if: needs.detect-and-tag.outputs.tagged == 'true'
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.detect-and-tag.outputs.tag }}
+      version: ${{ needs.detect-and-tag.outputs.version }}
+    permissions:
+      contents: write
+    secrets: inherit
