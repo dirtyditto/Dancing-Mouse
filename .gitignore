@@ -1,0 +1,52 @@
+# ──────────────────────────────────────────────────────────────────────────
+# Dancing Mouse — .gitignore
+# ──────────────────────────────────────────────────────────────────────────
+
+# Build artifacts
+.build/
+build/
+*.o
+*.a
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+Package.resolved
+
+# macOS
+.DS_Store
+**/.DS_Store
+*.swp
+*~
+.AppleDouble
+.LSOverride
+Icon?
+
+# IDE / editors
+.idea/
+*.iml
+.fleet/
+# Keep .vscode/launch.json checked in (debug config); ignore user-local files.
+.vscode/*.code-workspace
+.vscode/settings.json
+.vscode/tasks.json
+
+# Logs and temp
+*.log
+*.tmp
+*.bak
+.env
+.env.local
+
+# Distribution
+*.dmg
+*.pkg
